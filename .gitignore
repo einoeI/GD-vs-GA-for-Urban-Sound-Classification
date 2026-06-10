@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+env/
+venv/
+.env/
+.venv/
+
+# Generated outputs (notebook creates these on run)
+results/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Archives and course slides
+*.zip
+Slides/
