@@ -1,0 +1,528 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{default}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{tikz}
+
+\graphicspath{{results/figures/}{presentation/logo/}}
+
+\definecolor{upcblue}{HTML}{0077C8}
+\definecolor{gdblue}{HTML}{2196F3}
+\definecolor{gaorange}{HTML}{FF5722}
+\definecolor{lightgrey}{HTML}{F5F5F5}
+
+% ── Colors ───────────────────────────────────────────────────────────────────
+\setbeamercolor{structure}{fg=upcblue}
+\setbeamercolor{normal text}{fg=black,bg=white}
+\setbeamercolor{frametitle}{fg=black,bg=white}
+\setbeamercolor{block title}{bg=upcblue!15,fg=upcblue!80!black}
+\setbeamercolor{block body}{bg=upcblue!5,fg=black}
+
+% ── Layout ───────────────────────────────────────────────────────────────────
+\setbeamersize{text margin left=0.8cm,text margin right=0.4cm}
+\setbeamerfont{frametitle}{size=\normalsize,series=\bfseries}
+\setbeamertemplate{navigation symbols}{}
+
+% ── Blue left stripe on every slide ──────────────────────────────────────────
+\setbeamertemplate{background}{%
+  \begin{tikzpicture}
+    \useasboundingbox (0,0) rectangle (\paperwidth,\paperheight);
+    \fill[upcblue] (0,0) rectangle (0.45cm,\paperheight);
+  \end{tikzpicture}%
+}
+
+% ── Headline: course name left + UPC logo right ───────────────────────────────
+\setbeamertemplate{headline}{%
+  \leavevmode
+  \hbox{%
+    \begin{beamercolorbox}[wd=\paperwidth,ht=1.1cm,dp=0.2cm]{headline}%
+      \hspace{0.7cm}%
+      \raisebox{0.3cm}{\color{gray}\footnotesize Custom Smart Adaptive Systems}%
+      \hfill
+      \raisebox{0.15cm}{%
+        \includegraphics[height=0.75cm]{{presentation/logo/upc-positiu-p3005 (1)}.png}%
+      }%
+      \hspace{0.3cm}%
+    \end{beamercolorbox}%
+  }%
+}
+
+% ── No footline ──────────────────────────────────────────────────────────────
+\setbeamertemplate{footline}{}
+
+% ── Frametitle: indent past the stripe ───────────────────────────────────────
+\setbeamertemplate{frametitle}{%
+  \vskip0.15cm
+  \hspace{0.1cm}\insertframetitle
+}
+
+\title{Gradient Descent vs.\ Genetic Algorithm\\for Urban Sound Classification}
+\subtitle{Custom Smart Adaptive Systems · UPC 2025/26}
+\author{Leonie Greber}
+\date{\today}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Dataset}
+
+\begin{frame}{Dataset: UrbanSound8K}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \begin{itemize}
+        \item \textbf{8\,674 audio clips}, 10 urban-sound classes
+        \item Raw audio reduced to \textbf{34 numerical features} per clip
+        \item Features extracted once; training operates on tabular data
+      \end{itemize}
+      \vspace{0.5em}
+      \begin{tabular}{ll}
+        \toprule
+        Feature group & Dimensions \\
+        \midrule
+        MFCC (mel-frequency cepstral coefficients) & 13 \\
+        Chroma & 12 \\
+        Spectral contrast & 7 \\
+        Zero-crossing rate & 1 \\
+        Spectral centroid & 1 \\
+        \midrule
+        \textbf{Total} & \textbf{34} \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \textbf{10 classes:}\\[0.3em]
+      \small
+      air conditioner, car horn, children playing,\\
+      dog bark, drilling, engine idling,\\
+      gun shot, jackhammer, siren, street music
+      \vspace{0.5em}
+
+      \textbf{Split (stratified):}\\
+      70\% train · 10\% val · 20\% test
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Dataset: Class Distribution}
+  \begin{columns}[T]
+    \begin{column}{0.58\textwidth}
+      \includegraphics[width=\textwidth]{class_distribution.png}
+    \end{column}
+    \begin{column}{0.38\textwidth}
+      \begin{itemize}
+        \item Most classes: $\approx$1\,000 samples
+        \item \textbf{car\_horn} ($\approx$429) and \textbf{gun\_shot} ($\approx$374) are underrepresented
+        \item Stratified split ensures proportional representation in every fold
+        \item These two classes will show lower F1 (by construction, not model failure)
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Dataset: Feature Importance and Class Separability}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \includegraphics[width=\textwidth]{feature_importance.png}\\
+      \centering\small MFCC features dominate mutual information
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \includegraphics[width=\textwidth]{pca_2d.png}\\
+      \centering\small Classes overlap in 2D; non-linear boundaries needed
+    \end{column}
+  \end{columns}
+  \vspace{0.2em}
+  \begin{itemize}
+    \item PCA retains $\approx$42\% of variance in 2 components; substantial structure remains in higher dims
+    \item A non-linear model (MLP with ReLU) is therefore justified
+  \end{itemize}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Architecture}
+
+\begin{frame}{MLP Architecture}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \textbf{Forward pass:}
+      \[
+        \mathbf{z}^{(1)} = W_1\mathbf{x} + \mathbf{b}_1, \quad
+        \mathbf{h} = \text{ReLU}(\mathbf{z}^{(1)})
+      \]
+      \[
+        \mathbf{z}^{(2)} = W_2\mathbf{h} + \mathbf{b}_2 \quad\text{(logits)}
+      \]
+      \vspace{0.3em}
+      {\scriptsize\texttt{Input(34) $\to$ Linear(34$\to$20) $\to$ ReLU $\to$ Linear(20$\to$10)}}
+
+      \vspace{0.7em}
+      \textbf{Parameter count:}\\[0.3em]
+      \begin{tabular}{lcc}
+        \toprule
+        Layer & Formula & Count \\
+        \midrule
+        Linear(34$\to$20) & $34\times20 + 20$ & 700 \\
+        Linear(20$\to$10) & $20\times10 + 10$ & 210 \\
+        \midrule
+        \textbf{Total} & & \textbf{910} \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{itemize}
+        \item \textbf{Loss:} CrossEntropyLoss (log-softmax + NLL)
+        \item Forward returns \emph{raw logits}; no explicit softmax layer
+        \item \textbf{Same architecture} for both GD and GA; only the weight-update mechanism differs
+        \item GA treats the MLP as a black box: no gradients required
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Why Hidden Size = 20? (Bias-Variance Constraint)}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \begin{block}{Rule of thumb: 5--10 training samples per parameter}
+        $\dfrac{6{,}072\text{ train samples}}{910\text{ parameters}} \approx 6.7
+        \;\Rightarrow$ within the safe zone
+      \end{block}
+      \vspace{0.4em}
+      \begin{tabular}{cccc}
+        \toprule
+        Hidden & Params & Samples/param & Risk \\
+        \midrule
+        10 & 460 & 13.2 & underfitting \\
+        \rowcolor{gdblue!20}
+        \textbf{20} & \textbf{910} & \textbf{6.7} & \textbf{good} \\
+        30 & 1{,}360 & 4.5 & overfitting \\
+        40 & 1{,}810 & 3.4 & overfitting \\
+        50 & 2{,}260 & 2.7 & overfitting \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{itemize}
+        \item Larger hidden layer can fit train data better but \emph{generalises worse} on a dataset of this size
+        \item This choice is \emph{confirmed empirically} by the parameter sweep in Section~4 (train$-$val gap widens for $h > 20$)
+        \item Weight decay ($\lambda=10^{-4}$) adds L2 regularisation as a second line of defence
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Mathematical Background}
+
+\begin{frame}{GD: Loss Function and Gradient}
+  \textbf{Cross-entropy loss} (multi-class, $N$ samples, $C=10$ classes):
+  \begin{align}
+    \mathcal{L}(\theta) &= -\frac{1}{N}\sum_{i=1}^{N} \log \hat{p}_{y_i}(\mathbf{x}_i;\,\theta)
+    \tag{1}\\[4pt]
+    \hat{p}_k(\mathbf{x}) &= \frac{e^{z_k(\mathbf{x})}}{\displaystyle\sum_{j=1}^{C} e^{z_j(\mathbf{x})}}
+    \quad\text{(softmax)}
+    \tag{2}
+  \end{align}
+
+  \textbf{Vanilla gradient descent update:}
+  \begin{equation}
+    \theta_{t+1} = \theta_t - \eta\,\nabla_\theta \mathcal{L}(\theta_t)
+    \tag{3}
+  \end{equation}
+
+  \begin{itemize}
+    \item $\nabla_\theta \mathcal{L}$ is computed via \textbf{backpropagation} (chain rule through both linear layers)
+    \item Mini-batch size 64 — trade-off between gradient noise (regularisation) and convergence speed
+    \item With weight decay $\lambda$: effective loss is $\mathcal{L}(\theta) + \tfrac{\lambda}{2}\|\theta\|^2$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{GD: Adam Optimizer}
+  Adam maintains \emph{per-parameter} running estimates of gradient mean and variance:
+  \begin{align}
+    m_t &= \beta_1 m_{t-1} + (1-\beta_1)\,g_t \tag{4}\\
+    v_t &= \beta_2 v_{t-1} + (1-\beta_2)\,g_t^2 \tag{5}\\
+    \hat{m}_t &= \frac{m_t}{1-\beta_1^t}, \quad
+    \hat{v}_t = \frac{v_t}{1-\beta_2^t}
+    \quad\text{(bias correction)} \tag{6}\\
+    \theta_{t+1} &= \theta_t - \frac{\eta}{\sqrt{\hat{v}_t}+\epsilon}\,\hat{m}_t
+    \tag{7}
+  \end{align}
+
+  \begin{columns}[T]
+    \begin{column}{0.45\textwidth}
+      \textbf{Parameters used:}\\[0.2em]
+      $\eta = 10^{-3},\quad \beta_1 = 0.9,\quad \beta_2 = 0.999$\\
+      $\epsilon = 10^{-8},\quad \lambda_{\text{wd}} = 10^{-4}$
+    \end{column}
+    \begin{column}{0.50\textwidth}
+      \begin{itemize}
+        \item $\sqrt{\hat{v}_t}$ normalises the step: large-gradient params take smaller steps
+        \item Bias correction avoids small initial estimates biasing early updates
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{GD: Training Dynamics}
+  \begin{center}
+    \includegraphics[width=0.85\textwidth]{gd_curves.png}
+  \end{center}
+  \begin{itemize}
+    \item Loss (log scale) falls near-linearly: confirms exponential decay, plateauing after epoch~80
+    \item Train and val accuracy track closely, confirming hidden$=20$ does not overfit
+    \item Log scale makes the convergence rate visible; the slope flattens after epoch~80
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{GA: Operators}
+  The GA searches the 910-dimensional weight space \emph{without gradients}.
+
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Fitness (improved):}
+      \begin{equation}
+        f(\theta) = -\mathcal{L}_{\text{val}}(\theta)
+        \tag{8}
+      \end{equation}
+      Higher fitness = lower validation loss; continuous signal vs.\ coarse accuracy.
+
+      \vspace{0.5em}
+      \textbf{BLX-$\alpha$ crossover} ($\alpha=0.5$):
+      \begin{equation}
+        o_i \sim \mathcal{U}[l_i,\,u_i]
+        \tag{9}
+      \end{equation}
+      \small$l_i = \min(p_i,q_i) - \alpha|p_i-q_i|$,\;
+      $u_i = \max(p_i,q_i) + \alpha|p_i-q_i|$\\[0.2em]
+      \normalsize Allows offspring outside parent range.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Gaussian mutation} ($p_m = 0.05$ per gene):
+      \begin{equation}
+        \theta_i \leftarrow \theta_i + \mathcal{N}(0,\,\sigma^2),\;\sigma=0.05
+        \tag{10}
+      \end{equation}
+      Per-gene probability: $\approx$46 of 910 weights perturbed per individual.
+
+      \vspace{0.5em}
+      \textbf{Selection:} Tournament of size 5: sample 5 individuals, keep the best.
+      Repeat $N-k$ times to fill the next generation.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{GA: Algorithm per Generation}
+  \begin{block}{One GA generation (pseudocode)}
+    \begin{enumerate}
+      \item Evaluate fitness for all individuals with invalid fitness
+      \item Select $N - k$ offspring via tournament selection
+      \item For each consecutive pair: apply BLX-$\alpha$ crossover with probability $c = 0.7$
+      \item For each offspring: apply Gaussian mutation with probability $p_m = 0.05$
+      \item Preserve top-$k$ \textbf{elite} individuals unchanged (elitism, $k=5$)
+      \item Replace population: offspring $\cup$ elites ($N$ individuals total)
+      \item Update Hall of Fame (best individual ever seen across all generations)
+    \end{enumerate}
+  \end{block}
+
+  \begin{itemize}
+    \item \textbf{Baseline GA} used raw accuracy fitness and \texttt{eaSimple} (no elitism); test acc 0.377
+    \item \textbf{Key improvements:} fitness $= -\mathcal{L}_{\text{val}}$ + elitism $\Rightarrow$ test acc 0.621
+    \item \textbf{Early stopping:} patience of 50 generations without improvement; avoids wasted compute
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{GA: Convergence (Improved)}
+  \begin{center}
+    \includegraphics[width=0.85\textwidth]{ga_convergence.png}
+  \end{center}
+  \begin{itemize}
+    \item Left: validation loss of best individual (HoF) vs population average; gap shows elites pull ahead
+    \item Right: accuracy of improved GA far exceeds baseline across all generations
+    \item Population std (shaded) gradually narrows; diversity decreases as elites dominate
+  \end{itemize}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Parameter Tuning}
+
+\begin{frame}{GD: Hyperparameter Sweeps (Learning Rate and Weight Decay)}
+  \begin{columns}[T]
+    \begin{column}{0.49\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{tuning_gd_lr.png}\\[0.2em]
+      \small Chosen: $\eta = 10^{-3}$
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{tuning_gd_wd.png}\\[0.2em]
+      \small Chosen: $\lambda = 10^{-4}$
+    \end{column}
+  \end{columns}
+  \vspace{0.4em}
+  \small All sweeps fix other parameters at chosen values; 150 epochs; seed fixed.
+  Hidden-size sweep: see next slide.
+\end{frame}
+
+\begin{frame}{Bias-Variance Tradeoff: Hidden Size in Detail}
+  \begin{center}
+    \includegraphics[width=0.82\textwidth]{tuning_gd_hidden.png}
+  \end{center}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{itemize}
+        \item $h=10$: both train and val acc are modest; \textbf{underfitting} (insufficient capacity)
+        \item $h=20$: small train$-$val gap, good val acc; \textbf{well-calibrated}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{itemize}
+        \item $h=30$--$50$: train acc rises, val acc plateaus/drops; \textbf{overfitting}, gap widens
+        \item Weight decay compresses the gap but also limits peak accuracy at high $h$
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{GA: Hyperparameter Sweeps}
+  \begin{columns}[T]
+    \begin{column}{0.33\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{tuning_ga_pop.png}\\
+      \small Chosen: $N = 100$
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{tuning_ga_mutpb.png}\\
+      \small Chosen: $p_m = 0.05$
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{tuning_ga_elite.png}\\
+      \small Chosen: $k = 5$
+    \end{column}
+  \end{columns}
+  \vspace{0.3em}
+  \small Sweeps use 100 generations each; $c = 0.7$ (crossover prob) fixed. Hatched bar = chosen value.
+
+  \vspace{0.3em}
+  \begin{itemize}
+    \item Larger populations explore more but with diminishing returns and higher per-generation cost
+    \item Low mutation ($p_m = 0.01$) causes premature convergence; high ($p_m = 0.2$) destroys good solutions
+    \item Elitism $k=5$ reliably outperforms $k=1$: a single elite can be lost to crossover; five provide a stable backbone
+  \end{itemize}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Results}
+
+\begin{frame}{Results: Accuracy and Training Time}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \includegraphics[width=\textwidth]{comparison_summary.png}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{tabular}{lcc}
+        \toprule
+        & \textcolor{gdblue}{\textbf{GD}} & \textcolor{gaorange}{\textbf{GA}} \\
+        \midrule
+        Test accuracy & \textbf{0.811} & 0.621 \\
+        Training time & $\approx$37\,s & $\approx$124\,s \\
+        Macro F1 & \textbf{$\approx$0.81} & $\approx$0.60 \\
+        Stopped at & 150 epochs & gen $\approx$799 \\
+        \bottomrule
+      \end{tabular}
+      \vspace{0.5em}
+      \begin{itemize}
+        \item GD is $\approx$30\% more accurate and $3.4\times$ faster
+        \item GA's gradient-free search struggles in 910 dimensions
+        \item Elitism + $-\mathcal{L}$ fitness roughly doubled GA accuracy over baseline (0.377 $\to$ 0.621)
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Results: Convergence}
+  \begin{center}
+    \includegraphics[width=\textwidth]{comparison_convergence.png}
+  \end{center}
+  \begin{columns}[T]
+    \begin{column}{0.50\textwidth}
+      \begin{itemize}
+        \item GD converges in $<50$ epochs; val accuracy plateaus near $81\%$
+        \item Rapid early gains reflect Adam's adaptive step-size
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{itemize}
+        \item GA improves slowly across ${\approx}800$ generations; best val accuracy ${\approx}62\%$
+        \item 1 GA generation $= 100$ individuals $\times$ val passes; $\gg10\times$ more compute per point
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Results: Per-class F1 Score}
+  \begin{center}
+    \includegraphics[width=0.90\textwidth]{comparison_f1.png}
+  \end{center}
+  \begin{itemize}
+    \item GD dominates on all 10 classes; both methods struggle most with \textit{gun\_shot} and \textit{car\_horn}
+    \item Low F1 on those two classes reflects the class imbalance, not model failure
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Results: Confusion Matrices}
+  \begin{center}
+    \includegraphics[width=\textwidth]{comparison_confusion.png}
+  \end{center}
+  \begin{itemize}
+    \item GA confusion matrix shows more off-diagonal mass; less discriminative across all classes
+    \item GD confuses acoustically similar pairs (e.g.\ jackhammer/drilling); GA confuses almost everything
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusion}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Key findings:}
+      \begin{itemize}
+        \item GD (Adam) clearly dominates: 81.1\% vs 62.1\% accuracy, $3\times$ faster
+        \item Continuous $-\mathcal{L}$ fitness + elitism are \emph{essential} for GA (baseline: 37.7\%)
+        \item Hidden $= 20$ is empirically confirmed as the optimal capacity for this dataset
+        \item Both methods agree: \textit{gun\_shot} and \textit{car\_horn} are hardest (class imbalance)
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{When does GA make sense?}
+      \begin{itemize}
+        \item Non-differentiable objectives (hardware-in-the-loop, discrete search spaces)
+        \item Black-box optimisation where gradient computation is impossible
+      \end{itemize}
+      \vspace{0.5em}
+      \textbf{Future work:}
+      \begin{itemize}
+        \item CMA-ES: adapts the mutation covariance matrix, far more efficient in high dimensions
+        \item Hybrid: GD warm-start $\to$ GA fine-tune for non-smooth loss surfaces
+        \item Neuroevolution of architectures (NEAT): evolve topology, not just weights
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\end{document}
