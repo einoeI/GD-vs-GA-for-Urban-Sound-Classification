@@ -1,5 +1,0 @@
-\beamer@sectionintoc {1}{Dataset}{3}{0}{1}
-\beamer@sectionintoc {2}{Architecture}{6}{0}{2}
-\beamer@sectionintoc {3}{Mathematical Background}{8}{0}{3}
-\beamer@sectionintoc {4}{Parameter Tuning}{14}{0}{4}
-\beamer@sectionintoc {5}{Results}{17}{0}{5}
