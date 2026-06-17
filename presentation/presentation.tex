@@ -12,13 +12,14 @@
 \usepackage{colortbl}
 \usepackage{tikz}
 
-\graphicspath{{results/figures/}{presentation/logo/}}
+\graphicspath{{../results/figures/}{logo/}}
 
 \definecolor{upcblue}{HTML}{0077C8}
 \definecolor{gdblue}{HTML}{2196F3}
 \definecolor{gaorange}{HTML}{FF5722}
 \definecolor{lightgrey}{HTML}{F5F5F5}
 \definecolor{accentpink}{HTML}{C2185B}
+\definecolor{hiddengreen}{HTML}{2E7D32}
 
 % -- Colors -------------------------------------------------------------------
 \setbeamercolor{structure}{fg=upcblue}
@@ -49,7 +50,7 @@
       \raisebox{0.3cm}{\color{gray}\footnotesize Custom Smart Adaptive Systems}%
       \hfill
       \raisebox{0.15cm}{%
-        \includegraphics[height=0.75cm]{{presentation/logo/upc-positiu-p3005 (1)}.png}%
+        \includegraphics[height=0.75cm]{{logo/upc-positiu-p3005 (1)}.png}%
       }%
       \hspace{0.3cm}%
     \end{beamercolorbox}%
@@ -66,7 +67,7 @@
 }
 
 \title{Gradient Descent vs.\ Genetic Algorithm\\for Urban Sound Classification}
-\subtitle{Custom Smart Adaptive Systems · UPC 2025/26}
+\subtitle{Custom Smart Adaptive Systems \textperiodcentered{} UPC 2025/26}
 \author{Leonie Greber}
 \date{\today}
 
@@ -84,7 +85,7 @@
 % =============================================================================
 \section{Overview}
 
-\begin{frame}{Urban Sound Classification: Motivation and Approach}
+\begin{frame}{Motivation}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{Why urban sound classification?}
@@ -92,13 +93,13 @@
         \item Noise-level monitoring in smart cities
         \item Automatic detection of emergency vehicles (sirens)
         \item Public safety systems (gunshot detection)
-        \item Traffic and construction management (drilling, jackhammers)
+        \item Traffic and construction management
       \end{itemize}
       \vspace{0.4em}
       \textbf{This project:} train the \emph{same} MLP two fundamentally different ways:
       \begin{itemize}
-        \item[\textcolor{gdblue}{$\bullet$}] \textcolor{gdblue}{\textbf{GD}} (Adam): follow $\nabla\mathcal{L}$ -- \emph{gradient-guided}
-        \item[\textcolor{gaorange}{$\bullet$}] \textcolor{gaorange}{\textbf{GA}} (DEAP): evolve weight vectors -- \emph{gradient-free}
+        \item[\textcolor{gdblue}{$\bullet$}] \textcolor{gdblue}{\textbf{GD}} (Adam): follow $\nabla\mathcal{L}$, \emph{gradient-guided}
+        \item[\textcolor{gaorange}{$\bullet$}] \textcolor{gaorange}{\textbf{GA}} (DEAP): evolve weight vectors, \emph{gradient-free}
       \end{itemize}
     \end{column}
     \begin{column}{0.44\textwidth}
@@ -113,7 +114,7 @@
       \end{block}
       \vspace{0.4em}
       \begin{block}{Research question}
-        \small Which optimizer finds better weights for the same MLP --
+        \small Which optimizer finds better weights for the same MLP:
         gradient-guided Adam or gradient-free evolution?
       \end{block}
     \end{column}
@@ -123,7 +124,7 @@
 % =============================================================================
 \section{Dataset}
 
-\begin{frame}{Dataset: Class Distribution}
+\begin{frame}{Class Distribution}
   \begin{columns}[T]
     \begin{column}{0.58\textwidth}
       \includegraphics[width=\textwidth]{class_distribution.png}
@@ -132,14 +133,14 @@
       \begin{itemize}
         \item Most classes: $\approx$1\,000 samples
         \item \textbf{car\_horn} ($\approx$429) and \textbf{gun\_shot} ($\approx$374) are underrepresented
-        \item Stratified split ensures proportional representation in every fold
-        \item These two classes will show lower F1 -- by design, not model failure
+        \item Stratified split keeps proportions in every fold
+        \item These two classes show lower F1 (by design, not model failure)
       \end{itemize}
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Dataset: Feature Importance and Class Separability}
+\begin{frame}{Feature Analysis}
   \begin{columns}[T]
     \begin{column}{0.48\textwidth}
       \includegraphics[width=\textwidth]{feature_importance.png}\\
@@ -152,80 +153,86 @@
   \end{columns}
   \vspace{0.2em}
   \begin{itemize}
-    \item Heavy class overlap even in the most informative 2D projection: a \textbf{non-linear model is justified}
-    \item MFCC features capture the spectral shape that makes each urban sound unique
+    \item Heavy class overlap even in the most informative 2D projection: a \textbf{non-linear model is needed}
+    \item MFCC features capture the spectral shape that makes each sound type unique
   \end{itemize}
 \end{frame}
 
 % =============================================================================
 \section{Architecture}
 
-\begin{frame}{The MLP: One Architecture, Two Optimizers}
+\begin{frame}{MLP Architecture}
   \begin{columns}[T]
     \begin{column}{0.54\textwidth}
       \centering
       \begin{tikzpicture}[
-        neuron/.style={circle,draw=gray!60,fill=gray!10,minimum size=0.42cm,inner sep=0},
+        neuron/.style={circle,draw=gray!60,fill=gray!12,minimum size=0.42cm,inner sep=0},
         >=stealth, font=\tiny
       ]
       \def\ls{1.75}
       \def\ns{0.50}
 
-      % Input layer
+      % Input layer (gray)
       \foreach \i in {0,...,4} {
         \node[neuron] (I\i) at (0, {(\i-2)*\ns}) {};
       }
-      \node[font=\scriptsize,gray,below=1pt] at (0,{-2.2*\ns}) {$\times 34$};
-      \node[font=\small,above=1pt] at (0,{2.2*\ns}) {\textbf{Input}};
+      \node[font=\scriptsize,gray,below=1pt] at (0,{-2.3*\ns}) {34 inputs};
+      \node[font=\small,above=1pt] at (0,{2.3*\ns}) {\textbf{Input}};
 
-      % Hidden layer
+      % Hidden layer (green tint -- distinct from GD blue box)
       \foreach \i in {0,...,3} {
-        \node[neuron,fill=gdblue!25,draw=gdblue!55] (H\i) at (\ls,{(\i-1.5)*\ns}) {};
+        \node[neuron,fill=hiddengreen!18,draw=hiddengreen!50] (H\i) at (\ls,{(\i-1.5)*\ns}) {};
       }
-      \node[font=\scriptsize,gray,below=1pt] at (\ls,{-2.2*\ns}) {$\times 60$};
-      \node[font=\small,above=1pt] at (\ls,{2.2*\ns}) {\textbf{Hidden}};
+      \node[font=\scriptsize,gray,below=1pt] at (\ls,{-2.3*\ns}) {60 hidden};
+      \node[font=\small,above=1pt] at (\ls,{2.3*\ns}) {\textbf{Hidden}};
 
-      % Output layer
+      % Output layer (purple tint -- distinct from GA orange box)
       \foreach \i in {0,...,2} {
-        \node[neuron,fill=gaorange!25,draw=gaorange!55] (O\i) at (2*\ls,{(\i-1)*\ns}) {};
+        \node[neuron,fill=upcblue!18,draw=upcblue!50] (O\i) at (2*\ls,{(\i-1)*\ns}) {};
       }
-      \node[font=\scriptsize,gray,below=1pt] at (2*\ls,{-2.2*\ns}) {$\times 10$};
-      \node[font=\small,above=1pt] at (2*\ls,{2.2*\ns}) {\textbf{Output}};
+      \node[font=\scriptsize,gray,below=1pt] at (2*\ls,{-2.3*\ns}) {10 outputs};
+      \node[font=\small,above=1pt] at (2*\ls,{2.3*\ns}) {\textbf{Output}};
 
-      % Connections I->H
+      % Connections I -> H
       \foreach \i in {0,...,4} { \foreach \j in {0,...,3} {
         \draw[gray!25,->,very thin] (I\i) -- (H\j);
       }}
-      % Connections H->O
+      % Connections H -> O
       \foreach \i in {0,...,3} { \foreach \j in {0,...,2} {
         \draw[gray!25,->,very thin] (H\i) -- (O\j);
       }}
 
       % Weight labels
-      \node[font=\small] at (0.5*\ls, {1.6*\ns}) {$W_1$};
-      \node[font=\small] at (1.5*\ls, {1.6*\ns}) {$W_2$};
+      \node[font=\small] at (0.5*\ls, {1.7*\ns}) {$W_1$};
+      \node[font=\small] at (1.5*\ls, {1.7*\ns}) {$W_2$};
 
-      % ReLU label
+      % ReLU
       \node[draw=gray!40,fill=gray!5,rounded corners=2pt,font=\tiny,inner sep=2pt]
-        at (\ls,{-1.8*\ns}) {ReLU};
+        at (\ls,{-1.9*\ns}) {ReLU};
+
+      % Shared label above both optimizer boxes
+      \node[font=\tiny,gray] at (\ls,{-2.7*\ns}) {both update $W_1$ and $W_2$:};
 
       % GD annotation box
       \node[draw=gdblue,fill=gdblue!8,rounded corners=3pt,
-            text width=2.65cm,align=center,font=\tiny,inner sep=3pt]
-        at (0.5*\ls,{-3.3*\ns}) {
-          \textcolor{gdblue}{\textbf{GD -- Adam}}\\[1pt]
+            text width=2.55cm,align=center,font=\tiny,inner sep=3pt]
+        (gdbox) at (0.48*\ls,{-3.7*\ns}) {
+          \textcolor{gdblue}{\textbf{GD: Adam}}\\[1pt]
           Backprop: $\nabla_{W_1}\!\mathcal{L},\;\nabla_{W_2}\!\mathcal{L}$\\
-          update weights each mini-batch
+          each mini-batch
         };
+      \draw[->,thin,gdblue] (gdbox.north) -- (0.48*\ls,{-2.9*\ns});
 
       % GA annotation box
       \node[draw=gaorange,fill=gaorange!8,rounded corners=3pt,
-            text width=2.9cm,align=center,font=\tiny,inner sep=3pt]
-        at (1.52*\ls,{-3.3*\ns}) {
-          \textcolor{gaorange}{\textbf{GA -- DEAP}}\\[1pt]
+            text width=2.75cm,align=center,font=\tiny,inner sep=3pt]
+        (gabox) at (1.52*\ls,{-3.7*\ns}) {
+          \textcolor{gaorange}{\textbf{GA: DEAP}}\\[1pt]
           chromosome $=$ flatten$[W_1\!\mid\!W_2]$\\
-          2\,710 weights evolved as one vector
+          2\,710 weights evolved
         };
+      \draw[->,thin,gaorange] (gabox.north) -- (1.52*\ls,{-2.9*\ns});
+
       \end{tikzpicture}
     \end{column}
     \begin{column}{0.42\textwidth}
@@ -245,11 +252,11 @@
         \textbf{Total} & & \textbf{2\,710} \\
         \bottomrule
       \end{tabular}
-      \vspace{0.3em}
+      \vspace{0.35em}
       \begin{itemize}
-        \item \textbf{Same architecture} for both; only the weight-update mechanism differs
-        \item GA: chromosome encodes all 2\,710 weights as a flat vector
-        \item \texttt{hidden\_dim = 60} selected by Optuna (see Section~4)
+        \item Same architecture for both; only the weight-update mechanism differs
+        \item GA encodes all 2\,710 weights as a flat chromosome
+        \item \texttt{hidden\_dim = 60} chosen by Optuna (Section~4)
       \end{itemize}
     \end{column}
   \end{columns}
@@ -258,7 +265,7 @@
 % =============================================================================
 \section{Gradient Descent}
 
-\begin{frame}{GD: Loss Function and Gradient}
+\begin{frame}{Gradient Descent}
   \textbf{Cross-entropy loss} (multi-class, $N$ samples, $C=10$ classes):
   \begin{align}
     \mathcal{L}(\theta) &= -\frac{1}{N}\sum_{i=1}^{N} \log \hat{p}_{y_i}(\mathbf{x}_i;\,\theta)
@@ -276,12 +283,12 @@
 
   \begin{itemize}
     \item $\nabla_\theta \mathcal{L}$ computed via \textbf{backpropagation} (chain rule through both linear layers)
-    \item Mini-batch size 64 -- trade-off between gradient noise (regularisation) and convergence speed
+    \item Mini-batch size 64: trade-off between gradient noise and convergence speed
     \item With weight decay $\lambda$: effective loss is $\mathcal{L}(\theta) + \tfrac{\lambda}{2}\|\theta\|^2$
   \end{itemize}
 \end{frame}
 
-\begin{frame}{GD: Adam Optimizer}
+\begin{frame}{The Adam Optimizer}
   Adam maintains \emph{per-parameter} running estimates of gradient mean and variance:
   \begin{align}
     m_t &= \beta_1 m_{t-1} + (1-\beta_1)\,g_t \tag{4}\\
@@ -308,116 +315,120 @@
   \end{columns}
 \end{frame}
 
-\begin{frame}{GD: Training Dynamics}
+\begin{frame}{GD Training Curves}
   \begin{center}
-    \includegraphics[width=0.85\textwidth]{gd_curves.png}
+    \includegraphics[width=0.88\textwidth]{gd_curves.png}
   \end{center}
   \begin{itemize}
-    \item Loss (log scale) falls near-linearly: exponential decay, plateauing after $\approx$80 epochs
-    \item Train and val accuracy track closely -- no overfitting despite 2\,710 parameters
-    \item Converges fully in 150 epochs; total wall time $\approx$52\,s
+    \item Loss (log scale) falls near-linearly, plateauing after $\approx$80 epochs
+    \item Train and val accuracy track closely: no overfitting despite 2\,710 parameters
+    \item Converges in 150 epochs; total wall time $\approx$52\,s
   \end{itemize}
 \end{frame}
 
 % =============================================================================
 \section{Genetic Algorithm}
 
-\begin{frame}{GA: Selection, Crossover, Mutation}
+\begin{frame}{GA Operators}
+  % Row 1: three TikZ diagrams
   \begin{columns}[T]
-    \begin{column}{0.62\textwidth}
-      \begin{columns}[T]
-        \begin{column}{0.32\textwidth}
-          \centering
-          \textbf{\small Tournament}\\[5pt]
-          \begin{tikzpicture}[font=\tiny, >=stealth, x=0.36cm, y=0.44cm]
-            \foreach \i/\f in {0/0.52, 1/0.61, 2/0.48, 3/0.57, 4/0.44} {
-              \draw[fill=gray!20,rounded corners=1pt] (\i,0) rectangle (\i+0.75,0.9);
-              \node at (\i+0.375,0.45) {\f};
-            }
-            \draw[draw=gdblue,very thick,rounded corners=1pt] (1,0) rectangle (1.75,0.9);
-            \draw[->,thick,gdblue] (1.375,-0.15) -- (1.375,-0.75);
-            \node[below,gdblue,font=\tiny] at (1.375,-0.75) {selected};
-          \end{tikzpicture}
-          \vspace{5pt}\\
-          \scriptsize Pick 5 at random;\\best fitness wins
-        \end{column}
-        \begin{column}{0.36\textwidth}
-          \centering
-          \textbf{\small Crossover (BLX-$\alpha$)}\\[5pt]
-          \begin{tikzpicture}[font=\tiny, >=stealth, x=0.30cm, y=0.36cm]
-            \node[left,font=\tiny] at (0,3.3) {$P_{\!A}$};
-            \foreach \i in {0,...,4} {
-              \draw[fill=gdblue!40] (\i*0.82,2.9) rectangle (\i*0.82+0.68,3.7);
-            }
-            \node[left,font=\tiny] at (0,1.8) {$P_{\!B}$};
-            \foreach \i in {0,...,4} {
-              \draw[fill=gaorange!40] (\i*0.82,1.4) rectangle (\i*0.82+0.68,2.2);
-            }
-            \draw[->,thick] (2.05,1.3) -- (2.05,0.75);
-            \node[left,font=\tiny] at (0,0.35) {$O$};
-            \foreach \i/\c in {0/gdblue!55, 1/gaorange!55, 2/gdblue!35, 3/gaorange!65, 4/gdblue!45} {
-              \draw[fill=\c] (\i*0.82,-0.05) rectangle (\i*0.82+0.68,0.75);
-            }
-          \end{tikzpicture}
-          \vspace{5pt}\\
-          \scriptsize Blend weights from\\both parents
-        \end{column}
-        \begin{column}{0.32\textwidth}
-          \centering
-          \textbf{\small Mutation}\\[5pt]
-          \begin{tikzpicture}[font=\tiny, >=stealth, x=0.30cm, y=0.44cm]
-            \foreach \i/\c in {0/gray!20, 1/gray!20, 2/accentpink!45, 3/gray!20, 4/gray!20} {
-              \draw[fill=\c] (\i*0.82,0) rectangle (\i*0.82+0.68,0.9);
-            }
-            \draw[->,thick,accentpink] (1.96,1.35) -- (1.96,0.95);
-            \node[above,accentpink,align=center,font=\tiny] at (1.96,1.35)
-              {$+\mathcal{N}(0,\sigma^2)$};
-          \end{tikzpicture}
-          \vspace{5pt}\\
-          \scriptsize $\approx$5\% of genes\\perturbed per ind.
-        \end{column}
-      \end{columns}
+    \begin{column}{0.33\textwidth}
+      \centering
+      \textbf{\small Tournament Selection}\\[5pt]
+      \begin{tikzpicture}[font=\tiny, >=stealth, x=0.38cm, y=0.46cm]
+        \foreach \i/\f in {0/0.52, 1/0.61, 2/0.48, 3/0.57, 4/0.44} {
+          \draw[fill=gray!20,rounded corners=1pt] (\i,0) rectangle (\i+0.80,0.9);
+          \node at (\i+0.40,0.45) {\f};
+        }
+        \draw[draw=gdblue,very thick,rounded corners=1pt] (1,0) rectangle (1.80,0.9);
+        \draw[->,thick,gdblue] (1.40,-0.15) -- (1.40,-0.80);
+        \node[below,gdblue,font=\tiny] at (1.40,-0.80) {winner};
+      \end{tikzpicture}
+      \vspace{4pt}\\
+      \scriptsize Draw 5 at random;\\highest fitness wins
     \end{column}
-    \begin{column}{0.35\textwidth}
-      \textbf{Fitness signal (improved):}
-      \begin{equation}
-        f(\theta) = -\mathcal{L}_{\mathrm{val}}(\theta) \tag{8}
-      \end{equation}
-      Continuous, smooth signal vs.\ coarse accuracy -- gives selection and crossover far more information.
+    \begin{column}{0.34\textwidth}
+      \centering
+      \textbf{\small BLX-$\alpha$ Crossover}\\[5pt]
+      \begin{tikzpicture}[font=\tiny, >=stealth, x=0.32cm, y=0.38cm]
+        \node[left,font=\tiny] at (0,3.3) {$P_{\!A}$};
+        \foreach \i in {0,...,4} {
+          \draw[fill=gdblue!40] (\i*0.85,2.9) rectangle (\i*0.85+0.70,3.7);
+        }
+        \node[left,font=\tiny] at (0,1.8) {$P_{\!B}$};
+        \foreach \i in {0,...,4} {
+          \draw[fill=gaorange!40] (\i*0.85,1.4) rectangle (\i*0.85+0.70,2.2);
+        }
+        \draw[->,thick] (2.13,1.3) -- (2.13,0.75);
+        \node[left,font=\tiny] at (0,0.35) {$O$};
+        \foreach \i/\c in {0/gdblue!55, 1/gaorange!55, 2/gdblue!35, 3/gaorange!65, 4/gdblue!45} {
+          \draw[fill=\c] (\i*0.85,-0.05) rectangle (\i*0.85+0.70,0.75);
+        }
+      \end{tikzpicture}
+      \vspace{4pt}\\
+      \scriptsize Blend genes from\\both parents
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \centering
+      \textbf{\small Gaussian Mutation}\\[5pt]
+      \begin{tikzpicture}[font=\tiny, >=stealth, x=0.32cm, y=0.46cm]
+        \foreach \i/\c in {0/gray!20, 1/gray!20, 2/accentpink!45, 3/gray!20, 4/gray!20} {
+          \draw[fill=\c] (\i*0.85,0) rectangle (\i*0.85+0.70,0.9);
+        }
+        \draw[->,thick,accentpink] (2.10,1.40) -- (2.10,0.95);
+        \node[above,accentpink,align=center,font=\tiny] at (2.10,1.40)
+          {$+\mathcal{N}(0,\sigma^2)$};
+      \end{tikzpicture}
+      \vspace{4pt}\\
+      \scriptsize $\approx$5\% of genes\\perturbed per individual
+    \end{column}
+  \end{columns}
 
-      \vspace{0.5em}
-      \textbf{Elitism:} top-$k$ individuals copied unchanged -- the best solution never regresses.
+  \vspace{0.3em}
+  \noindent\rule{\textwidth}{0.3pt}
+  \vspace{0.15em}
 
-      \vspace{0.5em}
-      \textbf{Why GA is hard here:}\\
-      Searching 2\,710 dimensions without gradient information is like finding the lowest point of a mountain range blindfolded.
+  % Row 2: textual explanations
+  \begin{columns}[T]
+    \begin{column}{0.33\textwidth}
+      \textbf{Fitness signal:}\\[2pt]
+      \small $f(\theta) = -\mathcal{L}_{\mathrm{val}}(\theta)$\\[2pt]
+      Continuous loss gives far more selection pressure than coarse accuracy.
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \textbf{Elitism:}\\[2pt]
+      \small Top $k=1$ individual copied unchanged each generation. The best solution never regresses.
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \textbf{Why GA is hard here:}\\[2pt]
+      \small Searching 2\,710 dimensions without gradient information is like finding the lowest point of a mountain range blindfolded.
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{GA: Algorithm and Convergence}
+\begin{frame}{GA Convergence}
   \begin{columns}[T]
     \begin{column}{0.47\textwidth}
       \begin{block}{One generation}
         \begin{enumerate}\scriptsize
           \item Evaluate $f(\theta) = -\mathcal{L}_{\mathrm{val}}$ for all invalid individuals
-          \item Select $N - k$ offspring via tournament (size~5)
+          \item Select $N - k$ offspring via tournament (size 5)
           \item BLX-$\alpha$ crossover with probability $c = 0.719$
           \item Gaussian mutation with probability $p_m = 0.045$
-          \item Preserve top-$k = 1$ \textbf{elite} individuals unchanged
+          \item Carry over top $k=1$ \textbf{elite} individual unchanged
           \item Update Hall of Fame (best ever seen)
         \end{enumerate}
       \end{block}
       \begin{itemize}\small
-        \item \textbf{Baseline} (accuracy fitness, no elitism): test~acc~0.377
-        \item \textbf{Improved} ($-\mathcal{L}$ + elitism): test~acc~0.612; early stopping at gen~483
+        \item \textbf{Baseline} (accuracy fitness, no elitism): test acc 0.377
+        \item \textbf{Improved} ($-\mathcal{L}$ + elitism): test acc 0.612, early stopping at gen 483
       \end{itemize}
     \end{column}
     \begin{column}{0.50\textwidth}
       \includegraphics[width=0.96\textwidth]{ga_convergence.png}
       \begin{itemize}\small
         \item Left: val loss of HoF vs population average; gap widens as elites dominate
-        \item Right: improved GA far outperforms baseline across all generations
+        \item Right: improved GA far outperforms baseline
       \end{itemize}
     \end{column}
   \end{columns}
@@ -426,16 +437,16 @@
 % =============================================================================
 \section{Parameter Tuning}
 
-\begin{frame}{Parameter Tuning: Optuna (TPE)}
+\begin{frame}{Hyperparameter Tuning}
   \begin{columns}[T]
     \begin{column}{0.50\textwidth}
-      \textbf{Bayesian optimisation -- Tree-structured Parzen Estimator}
+      \textbf{Optuna (Tree-structured Parzen Estimator)}
       \begin{enumerate}\small
         \item After each trial, fit two densities over the search space:\\[2pt]
-          $\ell(x)$ -- distribution of \emph{good} configs\\
-          $g(x)$ -- distribution of \emph{bad} configs
-        \item Propose next config maximising $\ell(x)/g(x)$
-        \item \textbf{MedianPruner:} kill a trial at step $e$ if its intermediate value is below the median of completed trials at the same step
+          $\ell(x)$: distribution of \emph{good} configurations\\
+          $g(x)$: distribution of \emph{bad} configurations
+        \item Propose next trial by maximising $\ell(x)/g(x)$
+        \item \textbf{MedianPruner:} stop a trial early if it falls below the median of completed trials at the same step
       \end{enumerate}
       \vspace{0.3em}
       More sample-efficient than grid or random search.
@@ -444,7 +455,7 @@
       \small
       \begin{tabular}{lll}
         \toprule
-        Parameter & Range & Scale \\
+        Parameter & Range & Type \\
         \midrule
         \multicolumn{3}{l}{\textit{GD: 60 trials, 60 epochs each}} \\
         \texttt{lr} & $[10^{-4},\,10^{-2}]$ & log \\
@@ -462,61 +473,21 @@
   \end{columns}
 \end{frame}
 
-\begin{frame}{Parameter Tuning: GD Results}
+\begin{frame}{Tuning Results}
   \begin{center}
-    \includegraphics[width=0.92\textwidth]{tuning_gd_optuna.png}
+    \includegraphics[width=0.72\textwidth]{tuning_validation.png}
   \end{center}
   \begin{columns}[T]
     \begin{column}{0.50\textwidth}
       \begin{itemize}
-        \item Convergence to val~acc~$>0.90$ within $\approx$30 trials
-        \item Higher LR ($\eta\approx5\!\times\!10^{-3}$) consistently outperforms default ($10^{-3}$)
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.46\textwidth}
-      \begin{itemize}
-        \item \textbf{hidden\_dim = 60} selected -- at the refined search ceiling
-        \item Chosen: $\eta=4.96\!\times\!10^{-3}$,\; $\lambda=3.3\!\times\!10^{-5}$,\; $h=60$
-      \end{itemize}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Parameter Tuning: GA Results}
-  \begin{center}
-    \includegraphics[width=0.92\textwidth]{tuning_ga_optuna.png}
-  \end{center}
-  \begin{columns}[T]
-    \begin{column}{0.50\textwidth}
-      \begin{itemize}
-        \item GA optimisation landscape is flat and noisy -- 20 trials gives weak signal
-        \item Best val~acc~$\approx$60\% across all configs; differences between them are small
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.46\textwidth}
-      \begin{itemize}
-        \item Chosen: $N=100$,\; $c=0.72$,\; $p_m=0.045$,\; $k=1$
-        \item Low $k=1$ (minimal elitism): continuous $-\mathcal{L}$ fitness may provide sufficient selection pressure alone
-      \end{itemize}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Tuning Impact: Default vs Tuned}
-  \begin{center}
-    \includegraphics[width=0.74\textwidth]{tuning_validation.png}
-  \end{center}
-  \begin{columns}[T]
-    \begin{column}{0.50\textwidth}
-      \begin{itemize}
-        \item \textbf{GD:} val~acc rises from $\approx$83\% (default $h=20$, $\eta=10^{-3}$)\\
+        \item \textbf{GD:} val acc rises from $\approx$83\% (default $h=20$, $\eta=10^{-3}$)
           to $\mathbf{91.9\%}$ (tuned $h=60$, $\eta=4.96\!\times\!10^{-3}$)
       \end{itemize}
     \end{column}
     \begin{column}{0.46\textwidth}
       \begin{itemize}
-        \item \textbf{GA:} modest improvement; 20 trials insufficient to reliably identify the best config in a 4-parameter space
-        \item \textbf{Key insight:} tuning effort that massively helps GD barely moves GA -- gradient-based methods are simply more tunable
+        \item \textbf{GA:} modest improvement; 20 trials insufficient for a reliable 4-parameter search
+        \item Tuning pays off strongly for GD; gradient-based methods are simply more tunable
       \end{itemize}
     \end{column}
   \end{columns}
@@ -525,7 +496,7 @@
 % =============================================================================
 \section{Results}
 
-\begin{frame}{Results: Accuracy and Training Time}
+\begin{frame}{Accuracy and Training Time}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \includegraphics[width=\textwidth]{comparison_summary.png}
@@ -538,40 +509,40 @@
         Test accuracy & \textbf{0.879} & 0.612 \\
         Training time & $\approx$52\,s & $\approx$155\,s \\
         Macro F1 & \textbf{0.879} & 0.614 \\
-        Stopped at & 150 epochs & gen~483 \\
+        Stopped at & 150 epochs & gen 483 \\
         \bottomrule
       \end{tabular}
       \vspace{0.5em}
       \begin{itemize}
         \item GD is $\approx$27\% more accurate and $3\times$ faster
-        \item GA's gradient-free search struggles in 2\,710 dimensions
-        \item Elitism $+\,-\mathcal{L}$ fitness doubled GA accuracy over baseline ($0.377 \to 0.612$)
+        \item GA struggles in 2\,710 dimensions without gradient information
+        \item Elitism and $-\mathcal{L}$ fitness doubled GA accuracy over the baseline ($0.377 \to 0.612$)
       \end{itemize}
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Results: Convergence}
+\begin{frame}{Convergence}
   \begin{center}
     \includegraphics[width=0.92\textwidth]{comparison_convergence.png}
   \end{center}
   \begin{columns}[T]
     \begin{column}{0.50\textwidth}
       \begin{itemize}
-        \item \textbf{Left:} GD val accuracy on its own epoch axis; converges in $<80$ epochs
-        \item Train/val curves track closely -- no overfitting
+        \item \textbf{Left:} GD val accuracy on its own epoch axis; converges in $<$80 epochs
+        \item Train and val curves track closely: no overfitting
       \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
       \begin{itemize}
         \item \textbf{Right:} GA best val accuracy on its own generation axis; pink dashed = GD reference
-        \item GA needs $\approx$483 generations and $3\times$ more wall time to still fall 27\% short
+        \item 483 generations and $3\times$ more wall time to still fall 27\% short
       \end{itemize}
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Results: Per-class F1 Score}
+\begin{frame}{Per-class F1 Score}
   \begin{center}
     \includegraphics[width=0.90\textwidth]{comparison_f1.png}
   \end{center}
@@ -581,7 +552,7 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Results: Confusion Matrices}
+\begin{frame}{Confusion Matrices}
   \begin{center}
     \includegraphics[width=0.92\textwidth]{comparison_confusion.png}
   \end{center}
@@ -596,10 +567,10 @@
     \begin{column}{0.48\textwidth}
       \textbf{Key findings:}
       \begin{itemize}
-        \item GD (Adam) clearly dominates: 87.9\% vs 61.2\% accuracy, $3\times$ faster
-        \item Optuna tuning improved GD from 81\% to 88\%; GA gains were modest -- confirms GD is the more tractable optimisation target
-        \item Continuous $-\mathcal{L}$ fitness $+$ elitism are \emph{essential} for GA (baseline: 37.7\%)
-        \item Both methods agree: \textit{gun\_shot} and \textit{car\_horn} are hardest (class imbalance)
+        \item GD (Adam) clearly wins: 87.9\% vs 61.2\% accuracy, $3\times$ faster
+        \item Optuna tuning improved GD from 81\% to 88\%; GA gains were modest, confirming GD is the more tractable target
+        \item Continuous $-\mathcal{L}$ fitness and elitism are \emph{essential} for GA (baseline: 37.7\%)
+        \item Both methods agree: \textit{gun\_shot} and \textit{car\_horn} are hardest
       \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
@@ -612,7 +583,7 @@
       \textbf{Future work:}
       \begin{itemize}
         \item CMA-ES: adapts mutation covariance, far more efficient in high dimensions
-        \item Hybrid: GD warm-start $\to$ GA fine-tune for non-smooth loss surfaces
+        \item Hybrid: GD warm-start, then GA fine-tune for non-smooth surfaces
         \item Neuroevolution (NEAT): evolve topology, not just weights
       \end{itemize}
     \end{column}
