@@ -1,0 +1,46 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{2}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Methodology}{2}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Dataset}{2}{subsection.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Class distribution across the 10 urban sound categories. Car horn and gun shot are underrepresented ($<$300 samples), motivating stratified splitting.}}{2}{figure.caption.2}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:class_dist}{{1}{2}{Class distribution across the 10 urban sound categories. Car horn and gun shot are underrepresented ($<$300 samples), motivating stratified splitting}{figure.caption.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Preprocessing}{2}{subsection.2.2}\protected@file@percent }
+\newlabel{fig:feat_imp}{{2a}{3}{Mutual information scores for each of the 34 features}{figure.caption.3}{}}
+\newlabel{sub@fig:feat_imp}{{a}{3}{Mutual information scores for each of the 34 features}{figure.caption.3}{}}
+\newlabel{fig:pca}{{2b}{3}{2D PCA projection (PC1+PC2 explain $\approx $42\% of variance)}{figure.caption.3}{}}
+\newlabel{sub@fig:pca}{{b}{3}{2D PCA projection (PC1+PC2 explain $\approx $42\% of variance)}{figure.caption.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Feature analysis. Heavy class overlap in the PCA projection justifies a non-linear ReLU-activated MLP over a linear classifier.}}{3}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:feature_analysis}{{2}{3}{Feature analysis. Heavy class overlap in the PCA projection justifies a non-linear ReLU-activated MLP over a linear classifier}{figure.caption.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Network Architecture}{3}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Training Approaches}{3}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Gradient Descent (GD)}{3}{subsection.4.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces GD training and validation loss/accuracy curves over 150 epochs.}}{4}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:gd_curves}{{3}{4}{GD training and validation loss/accuracy curves over 150 epochs}{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Genetic Algorithm (GA)}{4}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Encoding.}{4}{section*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Fitness.}{4}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Operators (tuned by Optuna, 20 trials):}{4}{section*.7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces GA best-fitness progression over generations. The dashed line marks GD's test accuracy as a reference ceiling. Early stopping triggered at generation 483.}}{4}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:ga_conv}{{4}{4}{GA best-fitness progression over generations. The dashed line marks GD's test accuracy as a reference ceiling. Early stopping triggered at generation 483}{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Hyperparameter Tuning}{5}{section.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Hyperparameter tuning results. GD convergence is clear; GA exhibits noisy, flat improvement — typical of sparse search in a high-dimensional, non-convex landscape.}}{5}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:tuning}{{5}{5}{Hyperparameter tuning results. GD convergence is clear; GA exhibits noisy, flat improvement — typical of sparse search in a high-dimensional, non-convex landscape}{figure.caption.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Default vs tuned validation accuracy. GD improves markedly (default $h=20$, $\eta =10^{-3}$ baseline $\approx $81\% $\to $ tuned 91.9\%). GA shows modest gains.}}{5}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:tuning_val}{{6}{5}{Default vs tuned validation accuracy. GD improves markedly (default $h=20$, $\eta =10^{-3}$ baseline $\approx $81\% $\to $ tuned 91.9\%). GA shows modest gains}{figure.caption.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Evaluation and Comparison}{5}{section.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Test-set performance comparison.}}{5}{table.caption.11}\protected@file@percent }
+\newlabel{tab:results}{{1}{5}{Test-set performance comparison}{table.caption.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Summary comparison of accuracy and training time.}}{6}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:summary}{{7}{6}{Summary comparison of accuracy and training time}{figure.caption.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Convergence plots. Left panel: GD loss and accuracy over 150 epochs. Right panel: GA best fitness over generations (pink dashed = GD test accuracy reference). Independent x-axes preserve the natural scale of each method.}}{6}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:convergence}{{8}{6}{Convergence plots. Left panel: GD loss and accuracy over 150 epochs. Right panel: GA best fitness over generations (pink dashed = GD test accuracy reference). Independent x-axes preserve the natural scale of each method}{figure.caption.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Per-class F1 scores. GD achieves consistently high F1 across all 10 classes. GA shows class-specific variation reflecting the noisier fitness landscape.}}{6}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:f1}{{9}{6}{Per-class F1 scores. GD achieves consistently high F1 across all 10 classes. GA shows class-specific variation reflecting the noisier fitness landscape}{figure.caption.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Normalised confusion matrices. GD (left) shows mostly diagonal predictions. GA (right) exhibits more off-diagonal confusion, particularly for acoustically similar classes.}}{7}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:confusion}{{10}{7}{Normalised confusion matrices. GD (left) shows mostly diagonal predictions. GA (right) exhibits more off-diagonal confusion, particularly for acoustically similar classes}{figure.caption.15}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{7}{section.7}\protected@file@percent }
+\gdef \@abspage@last{7}

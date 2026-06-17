@@ -1,0 +1,20 @@
+{
+  "gd": {
+    "lr": 0.004960719127437833,
+    "weight_decay": 3.294900078937187e-05,
+    "hidden_dim": 60
+  },
+  "ga": {
+    "pop_size": 100,
+    "cxpb": 0.7186841117373118,
+    "mutpb": 0.04512234654985014,
+    "elite_k": 1
+  },
+  "meta": {
+    "gd_best_val_acc": 0.9194,
+    "ga_best_val_acc": 0.6014,
+    "gd_n_trials": 60,
+    "ga_n_trials": 20,
+    "tuning_date": "2026-06-16"
+  }
+}
