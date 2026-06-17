@@ -33,7 +33,7 @@ This report compares two fundamentally different methods for training a Multilay
 for urban sound classification: Gradient Descent (GD) using the Adam optimizer and a Genetic
 Algorithm (GA) using the DEAP library. Both methods optimise the same 2,710-parameter MLP on the
 UrbanSound8K tabular dataset. Hyperparameters are tuned independently with Optuna (TPE). GD achieves
-a test accuracy of 87.9\% in approximately 52 seconds. The GA reaches 61.2\% in approximately 155
+a test accuracy of 88.7\% in approximately 52 seconds. The GA reaches 61.2\% in approximately 155
 seconds. The report details the methodology, core design decisions, and a direct performance
 comparison between gradient-based and evolutionary weight optimisation.
 \end{abstract}
@@ -253,7 +253,7 @@ in Table~\ref{tab:results}.
         \toprule
         Method & Test Acc & Macro F1 & Time (s) & Epochs/Gen \\
         \midrule
-        GD (Adam, tuned) & 87.9\% & 0.879 & $\approx$52 & 150 epochs \\
+        GD (Adam, tuned) & 88.7\% & 0.887 & $\approx$52 & 150 epochs \\
         GA (DEAP, tuned) & 61.2\% & 0.614 & $\approx$155 & 483 gen \\
         GA (default, untuned) & 37.7\% & --- & --- & 150 gen \\
         \bottomrule
@@ -297,7 +297,7 @@ in Table~\ref{tab:results}.
 \section{Conclusion}
 % ─────────────────────────────────────────────────────────────────────────────
 
-GD with Adam is significantly more effective for training this MLP: 87.9\% test accuracy vs.\
+GD with Adam is significantly more effective for training this MLP: 88.7\% test accuracy vs.\
 61.2\% for the GA, achieved in one-third the wall-clock time (52s vs.\ 155s). The key structural
 advantage of GD is that backpropagation computes the gradient for all 2,710 weights in a single
 forward-backward pass. The GA must evaluate the entire population ($\sim$100 individuals) to
@@ -308,7 +308,7 @@ non-differentiable objective over any search space. However, for a smooth, diffe
 loss with 2,710 continuous parameters, the GA's population-based exploration is simply
 outmatched by gradient information.
 
-The tuning results reinforce this: GD improved from $\approx$81\% to 91.9\% on validation
+The tuning results reinforce this: GD improved from $\approx$81\% to 88.7\% on test
 (+11 pp) with 60 Optuna trials, while the GA's improvement was marginal and noisy across 20
 trials, reflecting a flat, stochastic fitness landscape where small configuration changes have
 unpredictable effects.

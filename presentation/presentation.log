@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.12.16)  17 JUN 2026 21:20
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.12.16)  17 JUN 2026 21:44
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1389,12 +1389,13 @@ File: logo/upc-positiu-p3005 (1).png Graphic file (type png)
 Package pdftex.def Info: logo/upc-positiu-p3005 (1).png  used on input line 563
 .
 (pdftex.def)             Requested size: 71.16666pt x 21.33955pt.
-<../results/figures/comparison_confusion.png, id=188, 1050.324pt x 427.3566pt>
+<../results/figures/comparison_confusion.png, id=188, 1183.3008pt x 463.4916pt>
+
 File: ../results/figures/comparison_confusion.png Graphic file (type png)
 <use ../results/figures/comparison_confusion.png>
 Package pdftex.def Info: ../results/figures/comparison_confusion.png  used on i
 nput line 563.
-(pdftex.def)             Requested size: 387.41203pt x 157.63039pt.
+(pdftex.def)             Requested size: 387.41203pt x 151.74333pt.
 File: logo/upc-positiu-p3005 (1).png Graphic file (type png)
 <use logo/upc-positiu-p3005 (1).png>
 Package pdftex.def Info: logo/upc-positiu-p3005 (1).png  used on input line 563
@@ -1487,7 +1488,7 @@ eoni/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy5.pfb><C:
 cm/cmsy7.pfb><C:/Users/leoni/AppData/Local/Programs/MiKTeX/fonts/type1/public/a
 msfonts/cm/cmsy9.pfb><C:/Users/leoni/AppData/Local/Programs/MiKTeX/fonts/type1/
 public/amsfonts/symbols/msam10.pfb>
-Output written on presentation.pdf (18 pages, 1568400 bytes).
+Output written on presentation.pdf (18 pages, 1555747 bytes).
 PDF statistics:
  814 PDF objects out of 1000 (max. 8388607)
  44 named destinations out of 1000 (max. 500000)

@@ -506,15 +506,15 @@
         \toprule
         & \textcolor{gdblue}{\textbf{GD}} & \textcolor{gaorange}{\textbf{GA}} \\
         \midrule
-        Test accuracy & \textbf{0.879} & 0.612 \\
+        Test accuracy & \textbf{0.887} & 0.612 \\
         Training time & $\approx$52\,s & $\approx$155\,s \\
-        Macro F1 & \textbf{0.879} & 0.614 \\
+        Macro F1 & \textbf{0.887} & 0.614 \\
         Stopped at & 150 epochs & gen 483 \\
         \bottomrule
       \end{tabular}
       \vspace{0.5em}
       \begin{itemize}
-        \item GD is $\approx$27\% more accurate and $3\times$ faster
+        \item GD is $\approx$27\% more accurate and $3\times$ faster (88.7\% vs 61.2\%)
         \item GA struggles in 2\,710 dimensions without gradient information
         \item Elitism and $-\mathcal{L}$ fitness doubled GA accuracy over the baseline ($0.377 \to 0.612$)
       \end{itemize}
@@ -567,8 +567,8 @@
     \begin{column}{0.48\textwidth}
       \textbf{Key findings:}
       \begin{itemize}
-        \item GD (Adam) clearly wins: 87.9\% vs 61.2\% accuracy, $3\times$ faster
-        \item Optuna tuning improved GD from 81\% to 88\%; GA gains were modest, confirming GD is the more tractable target
+        \item GD (Adam) clearly wins: 88.7\% vs 61.2\% accuracy, $3\times$ faster
+        \item Optuna tuning + cosine LR decay improved GD from 81\% to 88.7\%; GA gains were modest, confirming GD is the more tractable target
         \item Continuous $-\mathcal{L}$ fitness and elitism are \emph{essential} for GA (baseline: 37.7\%)
         \item Both methods agree: \textit{gun\_shot} and \textit{car\_horn} are hardest
       \end{itemize}

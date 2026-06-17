@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.12.16)  17 JUN 2026 17:01
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.12.16)  17 JUN 2026 21:45
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -971,12 +971,13 @@ File: ../results/figures/comparison_f1.png Graphic file (type png)
 Package pdftex.def Info: ../results/figures/comparison_f1.png  used on input li
 ne 281.
 (pdftex.def)             Requested size: 385.02547pt x 145.35669pt.
-<../results/figures/comparison_confusion.png, id=129, 1050.324pt x 427.3566pt>
+<../results/figures/comparison_confusion.png, id=129, 1183.3008pt x 463.4916pt>
+
 File: ../results/figures/comparison_confusion.png Graphic file (type png)
 <use ../results/figures/comparison_confusion.png>
 Package pdftex.def Info: ../results/figures/comparison_confusion.png  used on i
 nput line 289.
-(pdftex.def)             Requested size: 452.9679pt x 184.30098pt.
+(pdftex.def)             Requested size: 452.9679pt x 177.42285pt.
  [6 <../results/figures/comparison_summary.png> <../results/figures/comparison_
 convergence.png> <../results/figures/comparison_f1.png>] [7 <../results/figures
 /comparison_confusion.png>] (report.aux)
@@ -1007,7 +1008,7 @@ C:/Users/leoni/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmr17.pfb><C
 Users/leoni/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy10.pfb><C:/
 Users/leoni/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy8.pfb><C:/U
 sers/leoni/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt10.pfb>
-Output written on report.pdf (7 pages, 1588508 bytes).
+Output written on report.pdf (7 pages, 1575917 bytes).
 PDF statistics:
  218 PDF objects out of 1000 (max. 8388607)
  34 named destinations out of 1000 (max. 500000)
