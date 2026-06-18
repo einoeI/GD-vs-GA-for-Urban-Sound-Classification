@@ -1,7 +1,7 @@
 # GD vs GA for Urban Sound Classification
-> Custom Smart Adaptive Systems — UPC 2025/26 | Lab Free Project
+> Custom Smart Adaptive Systems | UPC 2025/26 | Lab Free Project
 
-Comparative study of two MLP training strategies — **Gradient Descent (GD)** via backpropagation and a **Genetic Algorithm (GA)** — applied to urban sound classification using the [UrbanSound8K tabular dataset](https://www.kaggle.com/datasets/orvile/urban-sound-8k-tabular-form/data).
+Comparative study of two MLP training strategies: **Gradient Descent (GD)** via backpropagation and a **Genetic Algorithm (GA)**, applied to urban sound classification using the [UrbanSound8K tabular dataset](https://www.kaggle.com/datasets/orvile/urban-sound-8k-tabular-form/data).
 
 **Dataset:** 8,674 pre-extracted audio feature vectors (MFCC, Chroma, Spectral Contrast, ZCR, Spectral Centroid), 34 features, 10 urban sound classes  
 **Team:** Leonie Greber, Anastasios Sidiropoulos
@@ -30,7 +30,7 @@ The same network is used for both methods; only the training procedure differs.
 
 ## Setup
 
-### Option A — Anaconda (recommended on Windows)
+### Option A: Anaconda (recommended on Windows)
 
 ```bash
 conda create -n csas python=3.12
@@ -42,7 +42,7 @@ jupyter notebook
 
 Select the **Python (csas)** kernel when opening a notebook.
 
-### Option B — Plain Python venv
+### Option B: Plain Python venv
 
 ```bash
 python -m venv .venv
@@ -60,7 +60,7 @@ jupyter notebook
 
 ## How to Run
 
-1. **Hyperparameter tuning** (optional — results already saved):  
+1. **Hyperparameter tuning** (optional, results already saved):  
    Open `tuning.ipynb` and run all cells. Writes best parameters to `results/best_params.json`.
 
 2. **Main experiment:**  
