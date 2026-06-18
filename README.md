@@ -14,7 +14,6 @@ Comparative study of two MLP training strategies — **Gradient Descent (GD)** v
 |--------|----------|----------|------|
 | GD (Adam, tuned) | **88.7%** | 0.887 | ~52 s |
 | GA (DEAP, tuned) | 61.2% | 0.614 | ~155 s |
-| GA (baseline, untuned) | 37.7% | — | — |
 
 ---
 
@@ -76,11 +75,7 @@ jupyter notebook
 
 ```
 ├── data/
-│   └── extracted_audio_features.csv   # UrbanSound8K tabular features
-├── presentation/
-│   └── presentation.tex               # Beamer slides (LaTeX)
-├── report/
-│   └── report.tex                     # Technical report (LaTeX)
+│   └── extracted_audio_features.csv   # UrbanSound8K 
 ├── results/
 │   ├── best_params.json               # Tuned hyperparameters (GD + GA)
 │   └── figures/                       # All output plots (12 PNGs)
