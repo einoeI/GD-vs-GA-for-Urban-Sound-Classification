@@ -6,7 +6,7 @@
 \usepackage{graphicx}
 \usepackage{geometry}
 \geometry{margin=1in}
-\usepackage[hidelinks]{hyperref}
+\usepackage[colorlinks=true, urlcolor=blue, linkcolor=black, citecolor=black]{hyperref}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{parskip}
@@ -15,14 +15,16 @@
 \usepackage{float}
 \usepackage{subcaption}
 \usepackage{xcolor}
+\usepackage{url}
+% Allow line breaks in \texttt paths at _ characters
+\renewcommand{\ttdefault}{lmtt}
+\DeclareFontFamily{T1}{lmtt}{\hyphenchar\font=45}
 
 \graphicspath{{../results/figures/}}
 
-\definecolor{gdblue}{HTML}{1565C0}
-\definecolor{gaorange}{HTML}{E65100}
-
 \title{Technical Report:\\GD vs GA for Urban Sound Classification}
-\author{Custom Smart Adaptive Systems $\cdot$ UPC 2025/26}
+\author{Leonie Greber \and Anastasios Sidiropoulos\\
+\small Custom Smart Adaptive Systems $\cdot$ UPC 2025/26}
 \date{\today}
 
 \begin{document}
@@ -31,11 +33,12 @@
 \begin{abstract}
 This report compares two fundamentally different methods for training a Multilayer Perceptron (MLP)
 for urban sound classification: Gradient Descent (GD) using the Adam optimizer and a Genetic
-Algorithm (GA) using the DEAP library. Both methods optimise the same 2,710-parameter MLP on the
-UrbanSound8K tabular dataset. Hyperparameters are tuned independently with Optuna (TPE). GD achieves
-a test accuracy of 88.7\% in approximately 52 seconds. The GA reaches 61.2\% in approximately 155
-seconds. The report details the methodology, core design decisions, and a direct performance
-comparison between gradient-based and evolutionary weight optimisation.
+Algorithm (GA) using the \href{https://deap.readthedocs.io}{DEAP} library. Both methods optimise
+the same 2,710-parameter MLP on the UrbanSound8K tabular dataset. Hyperparameters are tuned
+independently with \href{https://optuna.org}{Optuna} (TPE). GD achieves a test accuracy of 88.7\%
+in approximately 52 seconds. The GA reaches 61.2\% in approximately 155 seconds. The report
+details the methodology, core design decisions, and a direct performance comparison between
+gradient-based and evolutionary weight optimisation.
 \end{abstract}
 
 \tableofcontents
@@ -55,16 +58,36 @@ exact same 2,710 parameters is handed to both optimisers. Only the training mech
 isolates the effect of the optimisation strategy and enables a clean comparison of accuracy,
 convergence behaviour, and wall-clock time on a 10-class urban sound classification task.
 
+\paragraph{Key design decisions.}
+Three choices shape the entire experiment:
+\begin{enumerate}
+    \item \textbf{\href{https://pytorch.org}{PyTorch} over \href{https://scikit-learn.org}{scikit-learn}:}
+          PyTorch provides direct read/write access to the flat weight vector via
+          \texttt{torch.nn.utils.parameters\_to\_vector} and \texttt{vector\_to\_parameters}.
+          This is essential for the GA, which encodes all 2,710 weights as a single chromosome
+          and must inject them back into the network after each evaluation without any gradient
+          tape or optimiser state overhead.
+    \item \textbf{Fitness evaluated on the validation set:} evaluating each individual on the
+          867-sample validation split rather than the 6,072-sample training split gives a $7\times$
+          speedup per fitness evaluation, making the GA feasible in wall-clock time with negligible
+          effect on selection pressure.
+    \item \textbf{Cosine annealing for GD:} a fixed learning rate near convergence causes the loss
+          to oscillate around the minimum rather than settle into it. A cosine annealing schedule
+          smoothly decays the step size from $\eta_0$ to $10^{-5}$ over 150 epochs, eliminating
+          oscillations and improving final test accuracy from 87.9\% to 88.7\%.
+\end{enumerate}
+
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Methodology}
 % ─────────────────────────────────────────────────────────────────────────────
 
 \subsection{Dataset}
 
-The UrbanSound8K tabular dataset contains 8,674 pre-extracted audio feature vectors distributed
-across 10 urban sound classes (air conditioner, car horn, children playing, dog bark, drilling,
-engine idling, gun shot, jackhammer, siren, street music). Each sample consists of 34 numerical
-features standard in audio machine learning:
+The \href{https://www.kaggle.com/datasets/orvile/urban-sound-8k-tabular-form}{UrbanSound8K tabular
+dataset} contains 8,674 pre-extracted audio feature vectors distributed across 10 urban sound
+classes (air conditioner, car horn, children playing, dog bark, drilling, engine idling, gun shot,
+jackhammer, siren, street music). Each sample consists of 34 numerical features standard in audio
+machine learning:
 
 \begin{itemize}
     \item \textbf{MFCC (13):} Mel-frequency cepstral coefficients capturing the spectral envelope.
@@ -77,21 +100,29 @@ features standard in audio machine learning:
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.80\textwidth]{class_distribution.png}
-    \caption{Class distribution across the 10 urban sound categories. Car horn and gun shot are
-    underrepresented ($<$300 samples), motivating stratified splitting.}
+    \caption{Class distribution across the 10 urban sound categories. Car horn (429 samples) and
+    gun shot (374 samples) fall well below the class mean of 867, motivating stratified splitting
+    to ensure both rare classes appear proportionally in every data split.}
     \label{fig:class_dist}
 \end{figure}
+
+The class imbalance visible in Figure~\ref{fig:class_dist} has direct consequences for evaluation.
+A naive random split would under-represent gun\_shot in the validation set, causing the Optuna
+fitness signal and the final test accuracy to be biased towards the majority classes. Stratified
+splitting prevents this by preserving the original class ratios in every split, ensuring that
+reported macro F1 scores reflect true per-class performance rather than majority-class dominance.
 
 \subsection{Preprocessing}
 
 Each of the 34 features is standardised to zero mean and unit variance using
-\texttt{StandardScaler} fit only on the training split. This prevents larger-magnitude features
-(e.g.\ spectral centroid) from artificially dominating weight updates during GD, and ensures the GA
-fitness landscape is similarly scaled.
+\href{https://scikit-learn.org}{\texttt{StandardScaler}} fit only on the training split. This
+prevents larger-magnitude features (e.g.\ spectral centroid) from artificially dominating weight
+updates during GD, and ensures the GA fitness landscape is similarly scaled. Applying the scaler
+only to the training split prevents data leakage: the validation and test sets are transformed
+using training-set statistics, as they would be in production.
 
 The dataset is split stratified by class: 70\% train (6,072 samples), 10\% validation
-(867 samples), 20\% test (1,734 samples). Stratification ensures that the two
-underrepresented classes (car horn, gun shot) appear in all three splits proportionally.
+(867 samples), 20\% test (1,734 samples).
 
 \begin{figure}[H]
     \centering
@@ -108,16 +139,28 @@ underrepresented classes (car horn, gun shot) appear in all three splits proport
         \caption{2D PCA projection (PC1+PC2 explain $\approx$42\% of variance).}
         \label{fig:pca}
     \end{subfigure}
-    \caption{Feature analysis. Heavy class overlap in the PCA projection justifies a non-linear
-    ReLU-activated MLP over a linear classifier.}
+    \caption{Feature analysis. Spectral contrast features carry the highest mutual information;
+    heavy class overlap in the PCA projection justifies a non-linear ReLU-activated MLP over a
+    linear classifier.}
     \label{fig:feature_analysis}
 \end{figure}
+
+Figure~\ref{fig:feature_analysis}(a) shows that spectral contrast features carry the highest
+mutual information with the class label. This is expected: the ratio of spectral peaks to valleys
+distinguishes tonal sounds (siren, street music) from broadband noise (drilling, jackhammer) more
+reliably than raw energy alone. MFCC features provide strong secondary signal by capturing the
+spectral envelope shape, while chroma features contribute complementary lower-level pitch
+information.
+
+Figure~\ref{fig:feature_analysis}(b) shows that even in the two most informative principal
+components, the 10 classes overlap heavily. This overlap confirms that no linear classifier can
+reliably separate the classes and motivates the use of a non-linear MLP with ReLU activations.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Network Architecture}
 % ─────────────────────────────────────────────────────────────────────────────
 
-The network is a fully-connected MLP implemented in PyTorch:
+The network is a fully-connected MLP implemented in \href{https://pytorch.org}{PyTorch}:
 
 \[
   \mathbf{h} = \mathrm{ReLU}(\mathbf{W}_1\mathbf{x} + \mathbf{b}_1), \qquad
@@ -131,10 +174,11 @@ The total parameter count is:
   (34 \times 60 + 60) + (60 \times 10 + 10) = 2{,}100 + 610 = 2{,}710 \text{ parameters}
 \]
 
-PyTorch was chosen over scikit-learn's \texttt{MLPClassifier} because it provides direct
-read/write access to the flat weight vector via \texttt{torch.nn.utils}. The GA exploits
-this to extract and inject all 2,710 weights as a single flat array in microseconds,
-with no gradient tape or optimiser state overhead during fitness evaluation.
+\href{https://pytorch.org}{PyTorch} was chosen over
+\href{https://scikit-learn.org}{scikit-learn}'s \texttt{MLPClassifier} because it provides direct
+read/write access to the flat weight vector via \texttt{torch.nn.utils}. The GA exploits this to
+extract and inject all 2,710 weights as a single flat array in microseconds, with no gradient tape
+or optimiser state overhead during fitness evaluation.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Training Approaches}
@@ -148,59 +192,87 @@ The GD model is trained with the Adam optimiser minimising cross-entropy loss:
   \mathcal{L} = -\frac{1}{N}\sum_{i=1}^{N}\sum_{c=1}^{10} y_{ic}\log\hat{y}_{ic}
 \]
 
-Tuned hyperparameters (Optuna, 60 trials): learning rate $\eta = 4.96 \times 10^{-3}$, weight
-decay $\lambda = 3.29 \times 10^{-5}$, hidden dimension $h = 60$. Training runs for a maximum of
-150 epochs with early stopping (patience 10). Batch size is 64.
+Tuned hyperparameters (\href{https://optuna.org}{Optuna}, 60 trials): learning rate
+$\eta = 4.96 \times 10^{-3}$, weight decay $\lambda = 3.29 \times 10^{-5}$, hidden dimension
+$h = 60$. Training runs for exactly 150 epochs with a cosine annealing learning-rate schedule
+($\eta_\mathrm{min} = 10^{-5}$). Batch size is 64.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{gd_curves.png}
-    \caption{GD training and validation loss/accuracy curves over 150 epochs.}
+    \caption{GD training and validation loss/accuracy over 150 epochs. The cosine annealing
+    schedule produces a smooth, monotonically decaying loss with no late-epoch oscillations.}
     \label{fig:gd_curves}
 \end{figure}
 
+Figure~\ref{fig:gd_curves} shows the effect of the cosine annealing schedule. The training loss
+on a log scale decays smoothly throughout all 150 epochs without the oscillations that arise with
+a fixed learning rate near convergence. Training accuracy reaches close to 1.0 by epoch 100, while
+validation accuracy stabilises at approximately 0.88 and tracks training closely, indicating that
+the weight decay ($\lambda = 3.29 \times 10^{-5}$) is sufficient to prevent severe overfitting
+despite the model memorising the training set.
+
 \subsection{Genetic Algorithm (GA)}
 
-The GA optimises the same 2,710-weight vector without any gradient information. The DEAP library
-is used for its clean separation of operator configuration and execution, and safe fitness
-invalidation after crossover/mutation.
+The GA optimises the same 2,710-weight vector without any gradient information. The
+\href{https://deap.readthedocs.io}{DEAP} library is used for its clean separation of operator
+configuration and execution, and safe fitness invalidation after crossover/mutation.
 
 \paragraph{Encoding.} Each individual is a flat Python list of 2,710 floats, initialised from
-$\mathcal{U}(-0.1, 0.1)$ to match PyTorch's default weight scale.
+$\mathcal{U}(-0.1, 0.1)$ to match \href{https://pytorch.org}{PyTorch}'s default weight scale.
 
-\paragraph{Fitness.} Negative validation accuracy (so DEAP maximises the correct quantity):
-$f = -\mathrm{acc}_\mathrm{val}$.
+\paragraph{Fitness.} Negative validation cross-entropy loss:
+$f(\theta) = -\mathcal{L}_\mathrm{val}(\theta)$. A continuous loss signal was chosen over discrete
+accuracy because small weight changes that barely shift class predictions still alter the loss,
+providing richer fitness differences and more informative selection pressure across the population.
 
-\paragraph{Operators (tuned by Optuna, 20 trials):}
+\paragraph{Operators (tuned by \href{https://optuna.org}{Optuna}, 20 trials):}
 \begin{itemize}
-    \item \textbf{Selection:} Tournament selection (size 5).
+    \item \textbf{Selection:} Tournament selection (size 5). Tournament selection is preferred over
+          roulette-wheel selection because it is invariant to fitness scaling and works well with
+          negative fitness values.
     \item \textbf{Crossover (BLX-$\alpha$):} $\alpha = 0.5$, applied with probability $p_c = 0.719$.
+          BLX-$\alpha$ blends parent values over an extended range, allowing offspring to explore
+          beyond the convex hull of the parents.
     \item \textbf{Mutation:} Gaussian perturbation ($\mu=0$, $\sigma=0.05$, per-gene
           prob 0.05), applied with $p_m = 0.045$.
-    \item \textbf{Elitism:} Top 1 individual carried forward each generation.
+    \item \textbf{Elitism:} Top 1 individual carried forward each generation. Without elitism, the
+          best solution can be lost to crossover or mutation; the baseline run without elitism
+          achieved only 37.7\% test accuracy, compared to 61.2\% with elitism.
     \item \textbf{Population:} 100 individuals; early stopping with patience 50 generations.
 \end{itemize}
 
 To reduce runtime, fitness is evaluated on the 867 validation samples rather than the 6,072
-training samples — a $7\times$ speedup per evaluation with negligible effect on selection pressure.
+training samples, giving a $7\times$ speedup per evaluation with negligible effect on selection
+pressure.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{ga_convergence.png}
-    \caption{GA best-fitness progression over generations. The dashed line marks GD's test
-    accuracy as a reference ceiling. Early stopping triggered at generation 483.}
+    \caption{GA best-fitness (Hall of Fame) progression over generations. Left panel: HoF loss vs
+    population average; the widening gap shows elites concentrating the search. Right panel:
+    improved GA vs baseline; early stopping triggers at generation 483. The dashed line marks GD's
+    test accuracy as a reference ceiling.}
     \label{fig:ga_conv}
 \end{figure}
+
+Figure~\ref{fig:ga_conv} reveals two phases of GA convergence. In the first 100 generations, the
+Hall of Fame fitness improves rapidly as the population explores the weight space. After that,
+improvement slows as the population clusters around the current best solution. The widening gap
+between HoF fitness and population average is a direct consequence of elitism: the elite individual
+dominates the selection pool and suppresses diversity. The comparison with the baseline (right
+panel) confirms that both elitism and the continuous loss fitness are essential: the baseline
+without either achieves only 37.7\% test accuracy.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Hyperparameter Tuning}
 % ─────────────────────────────────────────────────────────────────────────────
 
-Optuna with the Tree-structured Parzen Estimator (TPE) is employed for both methods. TPE models
-the objective as $p(x \mid y < y^*)$ and $p(x \mid y \geq y^*)$ using kernel density estimates,
-then samples from the ratio $\ell(x)/g(x)$ to propose the next trial. \texttt{MedianPruner}
-terminates trials whose intermediate validation accuracy falls below the median at each checkpoint,
-avoiding wasted computation on clearly unpromising configurations.
+\href{https://optuna.org}{Optuna} with the Tree-structured Parzen Estimator (TPE) is employed for
+both methods. TPE models the objective as $p(x \mid y < y^*)$ and $p(x \mid y \geq y^*)$ using
+kernel density estimates, then samples from the ratio $\ell(x)/g(x)$ to propose the next trial.
+\texttt{MedianPruner} terminates trials whose intermediate validation accuracy falls below the
+median at each checkpoint, avoiding wasted computation on clearly unpromising configurations.
 
 \begin{itemize}
     \item \textbf{GD (60 trials):} searches learning rate $[10^{-4}, 10^{-2}]$, weight decay
@@ -214,27 +286,44 @@ avoiding wasted computation on clearly unpromising configurations.
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.82\textwidth}
         \centering
         \includegraphics[width=\textwidth]{tuning_gd_optuna.png}
-        \caption{GD Optuna optimisation history.}
+        \caption{GD Optuna optimisation history (60 trials).}
+        \label{fig:tuning_gd}
     \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.48\textwidth}
+    \vspace{0.8em}
+    \begin{subfigure}[b]{0.82\textwidth}
         \centering
         \includegraphics[width=\textwidth]{tuning_ga_optuna.png}
-        \caption{GA Optuna optimisation history.}
+        \caption{GA Optuna optimisation history (20 trials).}
+        \label{fig:tuning_ga}
     \end{subfigure}
-    \caption{Hyperparameter tuning results. GD convergence is clear; GA exhibits noisy,
-    flat improvement — typical of sparse search in a high-dimensional, non-convex landscape.}
+    \caption{Optuna optimisation histories. GD shows a clear upward trend in best validation
+    accuracy as TPE narrows the search. GA exhibits a flat, noisy trajectory, typical of a
+    fitness landscape where operator settings have unpredictable effects on convergence speed.}
     \label{fig:tuning}
 \end{figure}
+
+Figure~\ref{fig:tuning_gd} shows GD's Optuna history: the running best validation accuracy
+improves steadily, confirming that TPE is effectively narrowing the search region. The spread of
+individual trial results decreases over time as unpromising regions are pruned by
+\texttt{MedianPruner}.
+
+Figure~\ref{fig:tuning_ga} tells a different story. The GA's optimisation history is flat and
+noisy across all 20 trials. This does not indicate that Optuna is failing; rather, it reflects the
+nature of the GA's fitness landscape: because the GA itself is stochastic and requires many
+generations to converge, small changes in population size or operator probabilities have
+unpredictable effects on the final validation accuracy within the fixed trial budget. The modest
+improvement from the best configuration still doubles accuracy compared to the default untuned
+baseline (37.7\%).
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.75\textwidth]{tuning_validation.png}
-    \caption{Default vs tuned validation accuracy. GD improves markedly (default $h=20$,
-    $\eta=10^{-3}$ baseline $\approx$81\% $\to$ tuned 91.9\%). GA shows modest gains.}
+    \caption{Default vs tuned validation accuracy. GD improves markedly from a default baseline
+    of $\approx$81\% (hidden size $h=20$, $\eta=10^{-3}$) to 91.9\% after tuning. GA shows
+    modest gains relative to the scale of GD's improvement.}
     \label{fig:tuning_val}
 \end{figure}
 
@@ -263,7 +352,7 @@ in Table~\ref{tab:results}.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{comparison_summary.png}
-    \caption{Summary comparison of accuracy and training time.}
+    \caption{Summary comparison of test accuracy and training time for the tuned models.}
     \label{fig:summary}
 \end{figure}
 
@@ -279,38 +368,101 @@ in Table~\ref{tab:results}.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{comparison_f1.png}
-    \caption{Per-class F1 scores. GD achieves consistently high F1 across all 10 classes.
-    GA shows class-specific variation reflecting the noisier fitness landscape.}
+    \caption{Per-class F1 scores for both tuned models. GD achieves consistently high F1 across
+    all 10 classes. GA's lowest scores are on air\_conditioner and gun\_shot
+    ($\approx$0.47 each), where the fitness landscape is especially flat.}
     \label{fig:f1}
 \end{figure}
+
+Figure~\ref{fig:f1} shows that GD's per-class F1 is consistently above 0.80, with the lowest
+score on street\_music and acoustically similar groups (children playing, dog bark). This remaining
+confusion is expected: ambient street sounds share spectral characteristics. The GA, by contrast,
+achieves its lowest F1 on air\_conditioner (a constant, ambient sound) and gun\_shot (a brief
+impulsive event). These two classes are acoustically very different from each other, suggesting
+that the GA's flat fitness landscape simply cannot reliably separate them given its gradient-free
+search mechanism.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{comparison_confusion.png}
-    \caption{Normalised confusion matrices. GD (left) shows mostly diagonal predictions.
-    GA (right) exhibits more off-diagonal confusion, particularly for acoustically similar
-    classes.}
+    \caption{Normalised confusion matrices. GD (left) shows mostly diagonal predictions; the
+    main confusion is between acoustically similar pairs (jackhammer/drilling,
+    children\_playing/street\_music). GA (right) exhibits diffuse off-diagonal mass, indicating
+    poor discrimination rather than targeted class confusion.}
     \label{fig:confusion}
 \end{figure}
+
+The confusion matrices in Figure~\ref{fig:confusion} reinforce this picture. GD's off-diagonal
+mass concentrates on a small number of acoustically similar pairs, showing that the model has
+learned to discriminate most classes reliably and is only confused where the features themselves
+are ambiguous. The GA's confusion matrix lacks this structure: off-diagonal errors are spread
+across many class pairs, consistent with a model that has not learned robust class boundaries.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
 % ─────────────────────────────────────────────────────────────────────────────
 
 GD with Adam is significantly more effective for training this MLP: 88.7\% test accuracy vs.\
-61.2\% for the GA, achieved in one-third the wall-clock time (52s vs.\ 155s). The key structural
-advantage of GD is that backpropagation computes the gradient for all 2,710 weights in a single
-forward-backward pass. The GA must evaluate the entire population ($\sim$100 individuals) to
-produce a single generation's update — with no guarantee of monotone improvement.
+61.2\% for the GA, achieved in one-third the wall-clock time (52\,s vs.\ 155\,s). The key
+structural advantage of GD is that backpropagation computes the gradient for all 2,710 weights in
+a single forward-backward pass. The GA must evaluate the entire population ($\sim$100 individuals)
+to produce a single generation's update, with no guarantee of monotone improvement.
 
 The GA's competitive strength lies in being gradient-free: it can in principle optimise any
 non-differentiable objective over any search space. However, for a smooth, differentiable MLP
-loss with 2,710 continuous parameters, the GA's population-based exploration is simply
-outmatched by gradient information.
+loss with 2,710 continuous parameters, the GA's population-based exploration is simply outmatched
+by gradient information.
 
-The tuning results reinforce this: GD improved from $\approx$81\% to 88.7\% on test
-(+11 pp) with 60 Optuna trials, while the GA's improvement was marginal and noisy across 20
-trials, reflecting a flat, stochastic fitness landscape where small configuration changes have
+The tuning results reinforce this: GD improved from $\approx$81\% to 88.7\% on test (+7.7\,pp)
+with 60 Optuna trials, while the GA's improvement was marginal and noisy across 20 trials,
+reflecting a flat, stochastic fitness landscape where small configuration changes have
 unpredictable effects.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\appendix
+\section{Code Structure}
+% ─────────────────────────────────────────────────────────────────────────────
+
+The experiment is split across two Jupyter notebooks.
+
+\subsection{\texttt{main.ipynb}}
+
+\texttt{main.ipynb} is the primary notebook. It covers:
+\begin{sloppypar}
+\begin{itemize}
+    \item \textbf{Data loading:} reads the tabular CSV, displays class counts, and produces the
+          class distribution figure.
+    \item \textbf{Preprocessing:} applies \texttt{StandardScaler} (fit on training split only),
+          performs stratified 70/10/20 split, converts arrays to
+          \href{https://pytorch.org}{PyTorch} tensors.
+    \item \textbf{Feature analysis:} computes mutual information scores for all 34 features and
+          produces the 2D PCA projection.
+    \item \textbf{MLP definition:} defines the two-layer \href{https://pytorch.org}{PyTorch}
+          \texttt{MLP} class with configurable hidden dimension.
+    \item \textbf{GD training:} loads best parameters from \texttt{results/best\_params.json},
+          trains with Adam and cosine annealing for 150 epochs, records loss and accuracy curves.
+    \item \textbf{GA implementation:} sets up the \href{https://deap.readthedocs.io}{DEAP}
+          toolbox (tournament selection, BLX-$\alpha$ crossover, Gaussian mutation, elitism, Hall
+          of Fame), runs the evolutionary loop with early stopping.
+    \item \textbf{Evaluation:} computes test accuracy, macro F1, and per-class F1; generates
+          confusion matrices and all comparison figures saved to \texttt{results/figures/}.
+\end{itemize}
+\end{sloppypar}
+
+\subsection{\texttt{tuning.ipynb}}
+
+\texttt{tuning.ipynb} runs the \href{https://optuna.org}{Optuna} hyperparameter searches. It
+covers:
+\begin{itemize}
+    \item \textbf{GD search (60 trials):} defines an Optuna objective that trains a fresh MLP for
+          up to 150 epochs for each trial, using \texttt{MedianPruner} to discard unpromising
+          configurations early. Searches learning rate, weight decay, and hidden dimension.
+    \item \textbf{GA search (20 trials):} defines an objective that runs the full GA loop for each
+          trial configuration. Searches population size, crossover probability, mutation
+          probability, and elite count.
+    \item \textbf{Results:} saves the best parameters for both methods to
+          \texttt{results/best\_params.json}, which \texttt{main.ipynb} loads at training time.
+          Also produces the Optuna optimisation-history figures.
+\end{itemize}
 
 \end{document}

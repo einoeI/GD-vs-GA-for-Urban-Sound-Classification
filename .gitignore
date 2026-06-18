@@ -12,10 +12,28 @@ venv/
 .env/
 .venv/
 
-
 # OS
 .DS_Store
 Thumbs.db
+
+# LaTeX auxiliary files
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.bbl
+*.blg
+
+# LaTeX compiled output (compile locally)
+*.pdf
+
+# Claude Code local settings
+.claude/
 
 # Archives and course slides
 *.zip
